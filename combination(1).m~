@@ -1,0 +1,51 @@
+function [max_score,Tgradient_W,Tgradient_V] = combination(scores_W,V,full_matrix,Window_size)
+number_of_shots = size(scores_W,2);
+best_score = -100000;
+
+V_scores = {};
+best_h = {};
+for i=1:size(V,1),
+    V_scores{i} = repmat(V(i,:),size(full_matrix,1),1).*full_matrix;
+end
+
+
+coeffs = zeros(size(scores_W,1),number_of_shots);
+%coeffs_V = zeros(size(scores_W,1),number_of_shots);
+all_phi_v = zeros(number_of_shots,size(full_matrix,2));
+for h=1:number_of_shots(),
+    b_h = zeros(length(V_scores),1);
+    v_bundle = max(1,h-Window_size):1:min(number_of_shots,h+Window_size);
+    for i=1:length(V_scores),%% 2
+        if(~isvector(V_scores{i}(v_bundle,:))),
+            [tmp, indexes_max_bh]= max(V_scores{i}(v_bundle,:));
+        else
+            tmp = V_scores{i}(v_bundle,:);
+            indexes_max_bh = 1;
+        end
+        
+        indexes_max_bh = v_bundle(indexes_max_bh);
+        
+        inds = sub2ind(size(full_matrix),indexes_max_bh,1:1:length(indexes_max_bh));
+        all_phi_v(h,:) = full_matrix(inds);
+        b_h(i,1) = sum(tmp);
+    end
+    a_h = max(scores_W,[],2);
+    coeffs(:,h) = a_h + b_h;
+end
+sum_coeffs = sum(coeffs);%%% 1 by number of possible h
+total_sum = sum(sum_coeffs);
+%%%%finding the best_score
+[max_score,max_h] = max(sum_coeffs);
+max_coeffs = max(coeffs,[],2);
+
+%%%%finding the gradients
+
+%%
+keyboard
+Tgradient_W = (repmat(sum_coeffs,size(full_matrix,1),1)./total_sum)*full_matrix;% gonna be 2*61
+
+%%
+Tgradient_V = (sum_coeffs./total_sum)*all_phi_v;
+
+
+end
